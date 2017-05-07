@@ -31,8 +31,11 @@
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
-
-        <Button Grid.Column="3" Command="{Binding Model.ScrambleCommand}" Height="20" Content="Scramble" />
+        <StackPanel Grid.Column="3" >
+            <Button Command="{Binding Model.ScrambleCommand}" Height="20" Content="Scramble" />
+            <Button Command="{Binding Model.SolveCommand}" Height="20" Content="Solve" />
+        </StackPanel>
+        
         <TextBlock Grid.Column="2" Text="{Binding Model.Score}" HorizontalAlignment="Center" VerticalAlignment="Center" />
 
         <view:Side DataContext="{Binding Model.Left}" Grid.Row="1" />

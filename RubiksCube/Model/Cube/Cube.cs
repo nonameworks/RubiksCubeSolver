@@ -11,14 +11,16 @@ namespace RubiksCube.Model
 {
     public class Cube : ViewModelBase
     {
+        private bool busy;
+
         public Cube()
         {
-            Front = new Side(Colors.Red, this);
-            Back = new Side(Colors.White, this);
-            Left = new Side(Colors.Green, this);
-            Right = new Side(Colors.Orange, this);
-            Top = new Side(Colors.Blue, this);
-            Bottom = new Side(Colors.Yellow, this);
+            Front = new Side(Colors.Red, this) { name = "Front" };
+            Back = new Side(Colors.White, this) { name = "Back" };
+            Left = new Side(Colors.Green, this) { name = "Left" };
+            Right = new Side(Colors.Orange, this) { name = "Right" };
+            Top = new Side(Colors.Blue, this) { name = "Top" };
+            Bottom = new Side(Colors.Yellow, this) { name = "Bottom" };
         }
 
         public Side Front { get; set; }
@@ -28,7 +30,16 @@ namespace RubiksCube.Model
         public Side Top { get; set; }
         public Side Bottom { get; set; }
 
-        internal void RotateFace(Side side)
+        #region Rotate
+
+        internal async Task RotateSideAsync(Side side)
+        {
+            RotateSide(side);
+            RaisePropertyChanged("Score");
+            await Task.Delay(100);
+        }
+
+        private void RotateSide(Side side)
         {
             ReplaceCorners(side);
             ReplaceMiddles(side);
@@ -40,7 +51,7 @@ namespace RubiksCube.Model
                 color = ReplaceColor(color, Bottom.TopRow.Right);
                 color = ReplaceColor(color, Right.TopRow.Left);
                 color = ReplaceColor(color, Top.BottomRow.Left);
-                
+
                 color = ReplaceColor(Top.BottomRow.Centre.FaceColor, Left.CentreRow.Right);
                 color = ReplaceColor(color, Bottom.TopRow.Centre);
                 color = ReplaceColor(color, Right.CentreRow.Left);
@@ -136,8 +147,6 @@ namespace RubiksCube.Model
                 color = ReplaceColor(color, Top.BottomRow.Right);
                 color = ReplaceColor(color, Front.BottomRow.Right);
             }
-
-            RaisePropertyChanged("Score");
         }
 
         private void ReplaceMiddles(Side side)
@@ -165,6 +174,8 @@ namespace RubiksCube.Model
             return original;
         }
 
+        #endregion
+
         private Side GetSide(int index)
         {
             switch (index)
@@ -179,6 +190,107 @@ namespace RubiksCube.Model
             }
         }
 
+        public RelayCommand SolveCommand { get => new RelayCommand(Solve, Ready); }
+
+        private bool Ready()
+        {
+            return !busy;
+        }
+
+        private async void Solve()
+        {
+            await BestSideSolution();
+        }
+
+        /// <summary>
+        /// Find the side that achieves the highest score and rotate it
+        /// If stuck on one side try a random side
+        /// </summary>
+        private async Task BestSideSolution()
+        {
+            try
+            {
+                busy = true;
+                var previous = new List<Side>();
+
+                while (IsSolved == false)
+                {
+                    // Find the side that results in the highest score
+                    var score = new List<int>();
+                    score.Add(GetScore(GetSide(score.Count)));
+                    score.Add(GetScore(GetSide(score.Count)));
+                    score.Add(GetScore(GetSide(score.Count)));
+                    score.Add(GetScore(GetSide(score.Count)));
+                    score.Add(GetScore(GetSide(score.Count)));
+                    score.Add(GetScore(GetSide(score.Count)));
+
+                    var max = score.Max(x => x);
+                    var sideWithMaxScore = GetSide(score.IndexOf(max));
+
+                    // If stuck on one side then try the next best
+                    previous.Add(sideWithMaxScore);
+                    if (previous.Count > 4)
+                        previous.RemoveAt(0);
+
+                    if (previous.Count == 4 && previous.All(x => x == sideWithMaxScore))
+                    {
+                        Random r = new Random();
+                        sideWithMaxScore = GetSide(r.Next(0, 6));
+                    }
+
+                    // Get the highest possible score
+                    await RotateSideAsync(sideWithMaxScore);
+                }
+
+            }
+            finally
+            {
+                busy = false;
+            }
+            
+        }
+
+        private int GetScore(Side side)
+        {
+            RotateSide(side);
+            var score = Score;
+            RotateSide(side);
+            RotateSide(side);
+            RotateSide(side);
+
+            return score;
+        }
+
+        /// <summary>
+        /// Rotate a random side, undo if it results in a lower score
+        /// Doesn't rotate the same side twice in a row
+        /// </summary>
+        private async Task NaiveSolution()
+        {
+            Side prevSide = null;
+            Random r = new Random();
+            int prevScore = 0;
+
+            while (IsSolved == false)
+            {
+                var side = GetSide(r.Next(0, 6));
+                if (side != prevSide)
+                {
+                    await RotateSideAsync(side);
+                    if (Score < prevScore)
+                    {
+                        for (int i = 0; i < 3; i++)
+                        {
+                            RotateSide(side);
+                        }
+                    }
+                }
+
+                prevSide = side;
+                prevScore = Score;
+            }
+        }
+
         public RelayCommand ScrambleCommand
         {
             get
@@ -188,9 +300,9 @@ namespace RubiksCube.Model
                     Random r = new Random();
                     for (int i = 0; i < 5; i++)
                     {
-                        GetSide(r.Next(0, 6)).RotateCommand.Execute(null);
+                        RotateSide(GetSide(r.Next(0, 6)));
                     }
-                });
+                }, Ready);
             }
         }
 

@@ -32,3 +32,4 @@ g:\users\adam\documents\visual studio 2017\Projects\RubiksCube\RubiksCube\obj\De
 g:\users\adam\documents\visual studio 2017\Projects\RubiksCube\RubiksCube\obj\Debug\RubiksCube.csproj.GenerateResource.Cache
 g:\users\adam\documents\visual studio 2017\Projects\RubiksCube\RubiksCube\obj\Debug\RubiksCube.exe
 g:\users\adam\documents\visual studio 2017\Projects\RubiksCube\RubiksCube\obj\Debug\RubiksCube.pdb
+g:\users\adam\documents\visual studio 2017\Projects\RubiksCube\RubiksCube\obj\Debug\RubiksCube_Content.g.cs

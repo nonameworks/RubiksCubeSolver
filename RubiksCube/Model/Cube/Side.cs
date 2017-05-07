@@ -17,18 +17,26 @@ namespace RubiksCube.Model
             CentreRow = new Row(color);
             BottomRow = new Row(color);
             Cube = cube;
+            this.color = color;
         }
 
+        private Color color;
         Cube Cube { get; set; }
         public Row TopRow { get; set; }
         public Row CentreRow { get; set; }
         public Row BottomRow { get; set; }
+        public string name { get; set; }
+
+        public override string ToString()
+        {
+            return name;
+        }
 
         public RelayCommand RotateCommand
         {
             get
             {
-                return new RelayCommand(() => { Cube.RotateFace(this); });
+                return new RelayCommand(async () => { await Cube.RotateSideAsync(this); });
             }
         }
 
@@ -36,8 +44,10 @@ namespace RubiksCube.Model
         {
             get
             {
-                var value = 1;
-                var color = TopRow.Left.FaceColor;
+                var value = 0;
+                if (TopRow.Left.FaceColor == color)
+                    value++;
+
                 if (TopRow.Right.FaceColor == color)
                     value++;
 
